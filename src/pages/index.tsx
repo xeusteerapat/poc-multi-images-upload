@@ -5,6 +5,7 @@ import {
   Text,
   rem,
   useMantineTheme,
+  Progress,
 } from '@mantine/core';
 import { Dropzone, DropzoneProps, IMAGE_MIME_TYPE } from '@mantine/dropzone';
 import { IconPhoto, IconUpload, IconX } from '@tabler/icons-react';
@@ -28,6 +29,9 @@ export default function Home(props: Partial<DropzoneProps>) {
   const [lastUploadedFileIndex, setLastUploadedFileIndex] = useState<
     number | null
   >(null);
+
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   const readAndUploadCurrentChunk = useCallback(() => {
     const reader = new FileReader();
@@ -69,7 +73,18 @@ export default function Home(props: Partial<DropzoneProps>) {
     const url = `${process.env.NEXT_PUBLIC_API}/upload?${params.toString()}`;
 
     axios
-      .post(url, data, { headers })
+      .post(url, data, {
+        headers,
+        onUploadProgress: progress => {
+          if (!progress.total) return;
+
+          setIsUploading(true);
+          setUploadProgress(
+            Math.round((progress.loaded / progress.total) * 100)
+          );
+          setIsUploading(false);
+        },
+      })
       .then(response => {
         const file = files[currentFileIndex];
         const filesize = files[currentFileIndex].size;
@@ -128,6 +143,7 @@ export default function Home(props: Partial<DropzoneProps>) {
         onReject={files => console.log('rejected files', files)}
         maxSize={10 * 1024 ** 2}
         accept={IMAGE_MIME_TYPE}
+        loading={isUploading}
         {...props}
       >
         <Group
@@ -166,6 +182,17 @@ export default function Home(props: Partial<DropzoneProps>) {
           </div>
         </Group>
       </Dropzone>
+      <div
+        style={{
+          padding: '1rem',
+        }}
+      ></div>
+      <Progress
+        value={uploadProgress}
+        label={`${uploadProgress}%`}
+        size='xl'
+        radius='xl'
+      />
       <List>
         {files.map(file => (
           <List.Item key={file.lastModified}>{file.name}</List.Item>
