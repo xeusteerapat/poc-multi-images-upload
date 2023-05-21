@@ -66,23 +66,25 @@ export default function Home(props: Partial<DropzoneProps>) {
     params.set('totalChunks', Math.ceil(file.size / chunkSize).toString());
 
     const headers = { 'Content-Type': 'application/octet-stream' };
-    //!TODO: Need to implememt server
-    const url = process.env.NEXT_PUBLIC_API + params.toString();
+    const url = `${process.env.NEXT_PUBLIC_API}/upload?${params.toString()}`;
 
-    axios.post(url, data, { headers }).then(response => {
-      const file = files[currentFileIndex];
-      const filesize = files[currentFileIndex].size;
-      const chunks = Math.ceil(filesize / chunkSize) - 1;
-      const isLastChunk = currentChunkIndex === chunks;
+    axios
+      .post(url, data, { headers })
+      .then(response => {
+        const file = files[currentFileIndex];
+        const filesize = files[currentFileIndex].size;
+        const chunks = Math.ceil(filesize / chunkSize) - 1;
+        const isLastChunk = currentChunkIndex === chunks;
 
-      if (isLastChunk) {
-        file.finalFilename = response.data.finalFilename;
-        setLastUploadedFileIndex(currentFileIndex);
-        setCurrentChunkIndex(null);
-      } else {
-        setCurrentChunkIndex(currentChunkIndex + 1);
-      }
-    }).catch;
+        if (isLastChunk) {
+          file.finalFilename = response.data.finalFilename;
+          setLastUploadedFileIndex(currentFileIndex);
+          setCurrentChunkIndex(null);
+        } else {
+          setCurrentChunkIndex(currentChunkIndex + 1);
+        }
+      })
+      .catch(err => console.log(err));
   };
 
   useEffect(() => {
@@ -124,7 +126,7 @@ export default function Home(props: Partial<DropzoneProps>) {
       <Dropzone
         onDrop={files => setFiles(files)}
         onReject={files => console.log('rejected files', files)}
-        maxSize={3 * 1024 ** 2}
+        maxSize={10 * 1024 ** 2}
         accept={IMAGE_MIME_TYPE}
         {...props}
       >
